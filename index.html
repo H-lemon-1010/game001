@@ -2,43 +2,81 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <meta property="og:title" content="즐거운 게임">
 <meta property="og:description" content="벽돌을 모두 깨자!">
 <meta property="og:image" content="https://github.com/H-lemon-1010/game001/raw/main/thumb.jpg">
 
 <title>벽돌깨기 게임</title>
+
 <style>
-  body { text-align: center; background: #e6f7ff; }
-  canvas { background: #fff; display: block; margin: 20px auto; }
+  body {
+    text-align: center;
+    background: #e6f7ff;
+  }
+
+  canvas {
+    background: #fff;
+    display: block;
+    margin: 20px auto;
+  }
+
+  button {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 15px 30px;
+    font-size: 18px;
+    border-radius: 10px;
+    background: #ffd93d;
+    border: none;
+  }
 </style>
 </head>
+
 <body>
 
 <h2>벽돌깨기 게임 (10초 제한)</h2>
 <canvas id="game" width="400" height="500"></canvas>
 <p id="status"></p>
 <button id="restart" onclick="restartGame()" style="display:none;">다시하기</button>
-  
+
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-let paddleX = 150;
-let ballX = 200, ballY = 300;
-let dx = 3, dy = -3;
+let paddleX;
+let ballX, ballY;
+let dx, dy;
 const paddleWidth = 80;
 
-let bricks = [];
-for(let i=0;i<4;i++){
-  for(let j=0;j<5;j++){
-    bricks.push({x: j*70+30, y: i*30+30, alive:true});
-  }
-}
+let bricks;
+let startTime;
+let gameOver;
 
-let startTime = Date.now();
-let gameOver = false;
+// 초기화 함수
+function initGame() {
+  paddleX = 150;
+
+  // 공 랜덤 위치
+  ballX = Math.random() * 300 + 50;
+  ballY = Math.random() * 200 + 200;
+
+  dx = 3;
+  dy = -3;
+
+  bricks = [];
+  for(let i=0;i<4;i++){
+    for(let j=0;j<5;j++){
+      bricks.push({x: j*70+30, y: i*30+30, alive:true});
+    }
+  }
+
+  startTime = Date.now();
+  gameOver = false;
+}
 
 // 키보드
 document.addEventListener("keydown", e => {
@@ -46,18 +84,21 @@ document.addEventListener("keydown", e => {
   if(e.key === "ArrowRight") paddleX += 20;
 });
 
-// 마우스 / 터치 드래그
+// 마우스
 canvas.addEventListener("mousemove", e => {
   paddleX = e.offsetX - paddleWidth/2;
 });
 
+// 모바일 드래그 (핵심 수정)
 canvas.addEventListener("touchmove", e => {
+  e.preventDefault();
   const rect = canvas.getBoundingClientRect();
   paddleX = e.touches[0].clientX - rect.left - paddleWidth/2;
-});
+}, { passive: false });
 
 function draw() {
-  if(gameOver) return;  // 🔴 게임 끝나면 멈춤
+  if(gameOver) return;
+
   ctx.clearRect(0,0,400,500);
 
   // 패들
@@ -80,7 +121,7 @@ function draw() {
     }
   });
 
-  // 공 이동
+  // 이동
   ballX += dx;
   ballY += dy;
 
@@ -96,26 +137,36 @@ function draw() {
   // 바닥
   if(ballY > 500) endGame(false);
 
-  // 시간 체크
+  // 시간
   let time = (Date.now() - startTime) / 1000;
-  document.getElementById("status").innerText = "남은 시간: " + (10 - time).toFixed(1);
+  document.getElementById("status").innerText =
+    "남은 시간: " + Math.max(0, (10 - time)).toFixed(1);
 
   if(time > 10) endGame(false);
 
-  // 승리 체크
+  // 승리
   if(bricks.every(b => !b.alive)) endGame(true);
 
-  if(!gameOver) requestAnimationFrame(draw);
+  requestAnimationFrame(draw);
 }
 
 function endGame(win){
-  if(gameOver) return;  // 🔴 여러 번 실행 방지
+  if(gameOver) return;
+
   gameOver = true;
   document.getElementById("status").innerText = win ? "성공!" : "실패!";
-   document.getElementById("restart").style.display = "block"; // 🔴 버튼 보이기
-
+  document.getElementById("restart").style.display = "block";
 }
 
+// 다시하기
+function restartGame(){
+  initGame();
+  document.getElementById("restart").style.display = "none";
+  draw();
+}
+
+// 시작
+initGame();
 draw();
 </script>
 
