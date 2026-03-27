@@ -52,6 +52,7 @@ canvas.addEventListener("touchmove", e => {
 });
 
 function draw() {
+  if(gameOver) return;  // 🔴 게임 끝나면 멈춤
   ctx.clearRect(0,0,400,500);
 
   // 패들
@@ -103,8 +104,11 @@ function draw() {
 }
 
 function endGame(win){
+  if(gameOver) return;  // 🔴 여러 번 실행 방지
   gameOver = true;
   document.getElementById("status").innerText = win ? "성공!" : "실패!";
+   document.getElementById("restart").style.display = "block"; // 🔴 버튼 보이기
+
 }
 
 draw();
