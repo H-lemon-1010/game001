@@ -1,1 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>벽돌깨기 게임</title>
+<style>
+  body { text-align: center; background: #e6f7ff; }
+  canvas { background: #fff; display: block; margin: 20px auto; }
+</style>
+</head>
+<body>
 
+<h2>벽돌깨기 게임 (10초 제한)</h2>
+<canvas id="game" width="400" height="500"></canvas>
+<p id="status"></p>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let paddleX = 150;
+let ballX = 200, ballY = 300;
+let dx = 3, dy = -3;
+const paddleWidth = 80;
+
+let bricks = [];
+for(let i=0;i<4;i++){
+  for(let j=0;j<5;j++){
+    bricks.push({x: j*70+30, y: i*30+30, alive:true});
+  }
+}
+
+let startTime = Date.now();
+let gameOver = false;
+
+// 키보드
+document.addEventListener("keydown", e => {
+  if(e.key === "ArrowLeft") paddleX -= 20;
+  if(e.key === "ArrowRight") paddleX += 20;
+});
+
+// 마우스 / 터치 드래그
+canvas.addEventListener("mousemove", e => {
+  paddleX = e.offsetX - paddleWidth/2;
+});
+
+canvas.addEventListener("touchmove", e => {
+  const rect = canvas.getBoundingClientRect();
+  paddleX = e.touches[0].clientX - rect.left - paddleWidth/2;
+});
+
+function draw() {
+  ctx.clearRect(0,0,400,500);
+
+  // 패들
+  ctx.fillRect(paddleX, 460, paddleWidth, 10);
+
+  // 공
+  ctx.beginPath();
+  ctx.arc(ballX, ballY, 8, 0, Math.PI*2);
+  ctx.fill();
+
+  // 벽돌
+  bricks.forEach(b=>{
+    if(b.alive){
+      ctx.fillRect(b.x,b.y,60,20);
+
+      if(ballX > b.x && ballX < b.x+60 && ballY > b.y && ballY < b.y+20){
+        dy *= -1;
+        b.alive = false;
+      }
+    }
+  });
+
+  // 공 이동
+  ballX += dx;
+  ballY += dy;
+
+  // 벽 충돌
+  if(ballX < 0 || ballX > 400) dx *= -1;
+  if(ballY < 0) dy *= -1;
+
+  // 패들 충돌
+  if(ballY > 450 && ballX > paddleX && ballX < paddleX + paddleWidth){
+    dy *= -1;
+  }
+
+  // 바닥
+  if(ballY > 500) endGame(false);
+
+  // 시간 체크
+  let time = (Date.now() - startTime) / 1000;
+  document.getElementById("status").innerText = "남은 시간: " + (10 - time).toFixed(1);
+
+  if(time > 10) endGame(false);
+
+  // 승리 체크
+  if(bricks.every(b => !b.alive)) endGame(true);
+
+  if(!gameOver) requestAnimationFrame(draw);
+}
+
+function endGame(win){
+  gameOver = true;
+  document.getElementById("status").innerText = win ? "성공!" : "실패!";
+}
+
+draw();
+</script>
+
+</body>
+</html>
