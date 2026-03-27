@@ -40,7 +40,7 @@
 
 <body>
 
-<h3>벽돌깨기 (10초)</h3>
+<h3>벽돌깨기 (30초)</h3>
 
 <div id="gameContainer">
   <canvas id="game"></canvas>
@@ -176,7 +176,7 @@ function draw() {
   document.getElementById("status").innerText =
     "남은 시간: " + Math.max(0, (10 - time)).toFixed(1);
 
-  if(time > 10) endGame(false);
+  if(time > 30) endGame(false);
 
   // 승리
   if(bricks.every(b=>!b.alive)) endGame(true);
