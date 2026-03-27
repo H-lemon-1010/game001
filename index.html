@@ -4,27 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta property="og:title" content="즐거운 게임">
-<meta property="og:description" content="벽돌을 모두 깨자!">
-<meta property="og:image" content="https://github.com/H-lemon-1010/game001/raw/main/thumb.jpg">
-
 <title>벽돌깨기 게임</title>
 
 <style>
   body {
-    text-align: center;
+    margin: 0;
     background: #e6f7ff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #gameContainer {
+    position: relative;
   }
 
   canvas {
     background: #fff;
     display: block;
-    margin: 20px auto;
   }
 
   button {
     position: fixed;
-    bottom: 30px;
+    bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
     padding: 15px 30px;
@@ -38,8 +40,12 @@
 
 <body>
 
-<h2>벽돌깨기 게임 (10초 제한)</h2>
-<canvas id="game" width="400" height="500"></canvas>
+<h3>벽돌깨기 (10초)</h3>
+
+<div id="gameContainer">
+  <canvas id="game"></canvas>
+</div>
+
 <p id="status"></p>
 <button id="restart" onclick="restartGame()" style="display:none;">다시하기</button>
 
@@ -47,23 +53,46 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-let paddleX;
-let ballX, ballY;
-let dx, dy;
+// 🔴 기준 해상도
+const baseWidth = 400;
+const baseHeight = 500;
+
+let scale = 1;
+
+// 🔴 화면 맞춤 (비율 유지)
+function resizeCanvas() {
+  const ratio = baseWidth / baseHeight;
+  let width = window.innerWidth;
+  let height = window.innerHeight * 0.8;
+
+  if (width / height > ratio) {
+    width = height * ratio;
+  } else {
+    height = width / ratio;
+  }
+
+  canvas.style.width = width + "px";
+  canvas.style.height = height + "px";
+
+  canvas.width = baseWidth;
+  canvas.height = baseHeight;
+
+  scale = width / baseWidth;
+}
+
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+// ===== 게임 변수 =====
+let paddleX, ballX, ballY, dx, dy;
 const paddleWidth = 80;
+let bricks, startTime, gameOver;
 
-let bricks;
-let startTime;
-let gameOver;
-
-// 초기화 함수
+// 초기화
 function initGame() {
   paddleX = 150;
-
-  // 공 랜덤 위치
   ballX = Math.random() * 300 + 50;
   ballY = Math.random() * 200 + 200;
-
   dx = 3;
   dy = -3;
 
@@ -86,23 +115,25 @@ document.addEventListener("keydown", e => {
 
 // 마우스
 canvas.addEventListener("mousemove", e => {
-  paddleX = e.offsetX - paddleWidth/2;
+  const rect = canvas.getBoundingClientRect();
+  paddleX = (e.clientX - rect.left) / scale - paddleWidth/2;
 });
 
-// 모바일 드래그 (핵심 수정)
+// 모바일 터치
 canvas.addEventListener("touchmove", e => {
   e.preventDefault();
   const rect = canvas.getBoundingClientRect();
-  paddleX = e.touches[0].clientX - rect.left - paddleWidth/2;
+  paddleX = (e.touches[0].clientX - rect.left) / scale - paddleWidth/2;
 }, { passive: false });
 
+// 게임 그리기
 function draw() {
   if(gameOver) return;
 
-  ctx.clearRect(0,0,400,500);
+  ctx.clearRect(0,0,baseWidth,baseHeight);
 
   // 패들
-  ctx.fillRect(paddleX, 460, paddleWidth, 10);
+  ctx.fillRect(paddleX, baseHeight - 40, paddleWidth, 10);
 
   // 공
   ctx.beginPath();
@@ -114,7 +145,8 @@ function draw() {
     if(b.alive){
       ctx.fillRect(b.x,b.y,60,20);
 
-      if(ballX > b.x && ballX < b.x+60 && ballY > b.y && ballY < b.y+20){
+      if(ballX > b.x && ballX < b.x+60 &&
+         ballY > b.y && ballY < b.y+20){
         dy *= -1;
         b.alive = false;
       }
@@ -125,40 +157,40 @@ function draw() {
   ballX += dx;
   ballY += dy;
 
-  // 벽 충돌
-  if(ballX < 0 || ballX > 400) dx *= -1;
+  // 벽
+  if(ballX < 0 || ballX > baseWidth) dx *= -1;
   if(ballY < 0) dy *= -1;
 
-  // 패들 충돌
-  if(ballY > 450 && ballX > paddleX && ballX < paddleX + paddleWidth){
+  // 패들
+  if(ballY > baseHeight - 50 &&
+     ballX > paddleX &&
+     ballX < paddleX + paddleWidth){
     dy *= -1;
   }
 
   // 바닥
-  if(ballY > 500) endGame(false);
+  if(ballY > baseHeight) endGame(false);
 
   // 시간
-  let time = (Date.now() - startTime) / 1000;
+  let time = (Date.now() - startTime)/1000;
   document.getElementById("status").innerText =
     "남은 시간: " + Math.max(0, (10 - time)).toFixed(1);
 
   if(time > 10) endGame(false);
 
   // 승리
-  if(bricks.every(b => !b.alive)) endGame(true);
+  if(bricks.every(b=>!b.alive)) endGame(true);
 
   requestAnimationFrame(draw);
 }
 
 function endGame(win){
   if(gameOver) return;
-
   gameOver = true;
   document.getElementById("status").innerText = win ? "성공!" : "실패!";
   document.getElementById("restart").style.display = "block";
 }
 
-// 다시하기
 function restartGame(){
   initGame();
   document.getElementById("restart").style.display = "none";
