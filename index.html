@@ -174,7 +174,7 @@ function draw() {
   // 시간
   let time = (Date.now() - startTime)/1000;
   document.getElementById("status").innerText =
-    "남은 시간: " + Math.max(0, (10 - time)).toFixed(1);
+    "남은 시간: " + Math.max(0, (30 - time)).toFixed(1);
 
   if(time > 30) endGame(false);
 
